@@ -102,7 +102,10 @@ Este proyecto implementa un sistema de mensajería que aprovecha los estándares
 
 - [W3C DID Core 1.0](https://www.w3.org/TR/did-1.0/#did-documents)
 - [W3C DID Core 1.1](https://www.w3.org/TR/did-1.1/)
-- Especificaciones BIP39 y BIP32 para gestión de claves criptográficas
+- [BIP32](https://github.com/bitcoin/bips/tree/master/bip-0032)
+- [BIP39](https://github.com/bitcoin/bips/tree/master/bip-0039)
+
+https://lucid.app/lucidchart/3acc4e8e-ff65-4c33-ac4f-59e7ce0b62d2/edit?viewport_loc=-69%2C-180%2C1609%2C1139%2C0_0&invitationId=inv_e06e3ff8-e52b-45e1-93e5-3571a5e50f9a
 
 ## Componentes del Proyecto
 
