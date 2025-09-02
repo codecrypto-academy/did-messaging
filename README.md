@@ -99,15 +99,45 @@ Este proyecto implementa un sistema de mensajería que aprovecha los estándares
 - **Plataforma Móvil**: Desarrollo inicial enfocado en Flutter
 
 ## Referencias Técnicas
+Aquí tienes los enlaces organizados por temática:
 
+## **Identidad Digital Descentralizada (DID)**
 - [W3C DID Core 1.0](https://www.w3.org/TR/did-1.0/#did-documents)
 - [W3C DID Core 1.1](https://www.w3.org/TR/did-1.1/)
+
+## **Bitcoin y Criptografía**
 - [BIP32](https://github.com/bitcoin/bips/tree/master/bip-0032)
-- [BIP39 Wordlist](https://www.blockplate.com/pages/bip-39-wordlist?srsltid=AfmBOop6zOXNZnkOidJjAmBQt35_0DyzJaj4efF5WndihlNW4MggcKvc)
 - [BIP39](https://github.com/bitcoin/bips/tree/master/bip-0039)
+- [BIP39 Wordlist](https://www.blockplate.com/pages/bip-39-wordlist?srsltid=AfmBOop6zOXNZnkOidJjAmBQt35_0DyzJaj4efF5WndihlNW4MggcKvc)
 - https://github.com/bitcoin/bips
+
+## **Blockchain y Web3**
+- [Ethers](https://docs.ethers.org/v6/)
+
+## **Criptografía y Seguridad**
+- [RFC 7516](https://www.rfc-editor.org/rfc/rfc7516.html) (JWE - JSON Web Encryption)
+- [Jose](https://www.ietf.org/proceedings/82/slides/jose-2.pdf) (JSON Object Signing and Encryption)
+- [Jose Plus](https://pub.dev/packages/jose_plus) (Implementación en Dart)
+
+## **Desarrollo Frontend/Web**
+- [Next.js](https://nextjs.org/)
+
+## **Desarrollo Mobile (Flutter)**
+- [Flutter](https://flutter.dev/)
+- [iOS](https://flutter.dev/multi-platform/ios)
+- [Android](https://docs.flutter.dev/get-started/flutter-for/android-devs)
+- [Dart](https://dart.dev/)
+
+## **Herramientas de Desarrollo**
+- [Android Studio](https://developer.android.com/studio?hl=es-419)
+
+## **Backend y Base de Datos**
+- [Supabase](https://supabase.com/)
+
+## **Documentación del Proyecto**
 - [Diagrama de arquitectura](https://lucid.app/lucidchart/3acc4e8e-ff65-4c33-ac4f-59e7ce0b62d2/edit?viewport_loc=-69%2C-180%2C1609%2C1139%2C0_0&invitationId=inv_e06e3ff8-e52b-45e1-93e5-3571a5e50f9a)
 
+Esta organización sugiere que estás trabajando en un proyecto de identidad digital descentralizada con una aplicación móvil Flutter que integra tecnologías blockchain y estándares de seguridad criptográfica.
 ## Componentes del Proyecto
 
 1. **DID Register (Next.js)**: Servicio de registro y resolución de DIDs web
