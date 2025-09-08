@@ -56,7 +56,7 @@ Este proyecto implementa un sistema de mensajería que aprovecha los estándares
 - **Generación de Claves**: Utiliza BIP39 para generar frases mnemónicas seguras
 - **Derivación de Claves**: Implementa BIP32 para la derivación jerárquica de claves privadas
 - **Registro DID**: Permite crear y registrar múltiples DIDs por usuario
-- **Almacenamiento Seguro**: Las claves privadas se almacenan cifradas en Supabase
+- **Almacenamiento Seguro**: Las claves privadas se en el device.
 
 #### Resolución de DIDs
 - **DID Resolver Público**: API que permite a cualquier aplicación resolver DIDs
@@ -109,6 +109,7 @@ Aquí tienes los enlaces organizados por temática:
 - [BIP32](https://github.com/bitcoin/bips/tree/master/bip-0032)
 - [BIP39](https://github.com/bitcoin/bips/tree/master/bip-0039)
 - [BIP39 Wordlist](https://www.blockplate.com/pages/bip-39-wordlist?srsltid=AfmBOop6zOXNZnkOidJjAmBQt35_0DyzJaj4efF5WndihlNW4MggcKvc)
+- [Diagrama de arquitectura](https://lucid.app/lucidchart/3acc4e8e-ff65-4c33-ac4f-59e7ce0b62d2/edit?view_items=eKQOC0S~HZGT&invitationId=inv_e06e3ff8-e52b-45e1-93e5-3571a5e50f9a)
 - https://github.com/bitcoin/bips
 
 ## **Blockchain y Web3**
