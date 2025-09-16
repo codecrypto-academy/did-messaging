@@ -1,0 +1,55 @@
+{
+  "config": {
+    "count": 5,
+    "prefix": "org",
+    "domain": "mycompany.com",
+    "includeServices": true,
+    "includeSocialProfiles": true,
+    "outputFile": "results.json"
+  },
+  "timestamp": "2025-09-08T20:54:20.907Z",
+  "summary": {
+    "total": 5,
+    "successful": 5,
+    "failed": 0,
+    "successRate": "100.0%"
+  },
+  "results": [
+    {
+      "did": "did:web:org/alice",
+      "username": "alice",
+      "documentId": "110ad02b-835c-442c-8765-4b012c684af5",
+      "keysCount": 2,
+      "servicesCount": 3
+    },
+    {
+      "did": "did:web:org/bob",
+      "username": "bob",
+      "documentId": "6e7172c6-038d-42c7-b794-e40c39a201a2",
+      "keysCount": 2,
+      "servicesCount": 3
+    },
+    {
+      "did": "did:web:org/charlie",
+      "username": "charlie",
+      "documentId": "1d5a2e8b-e970-4dec-bb49-94676c7de79c",
+      "keysCount": 2,
+      "servicesCount": 3
+    },
+    {
+      "did": "did:web:org/diana",
+      "username": "diana",
+      "documentId": "bf0ceabe-2dce-4a0d-b51e-2a5b5468e5c0",
+      "keysCount": 2,
+      "servicesCount": 3
+    },
+    {
+      "did": "did:web:org/eve",
+      "username": "eve",
+      "documentId": "a519f9f8-b4a1-435e-b004-9a7312735788",
+      "keysCount": 2,
+      "servicesCount": 3
+    }
+  ],
+  "errors": []
+}

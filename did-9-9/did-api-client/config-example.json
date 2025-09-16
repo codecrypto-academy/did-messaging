@@ -1,0 +1,7 @@
+{
+  "count": 15,
+  "prefix": "user",
+  "domain": "mycompany.com",
+  "includeServices": true,
+  "includeSocialProfiles": true
+}
