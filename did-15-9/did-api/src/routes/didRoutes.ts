@@ -7,6 +7,7 @@ const didController = new DIDController();
 
 // Rutas CRUD para DIDs
 router.post('/', validateCreateDID, didController.createDID.bind(didController));
+router.post('/simple', didController.createSimpleDID.bind(didController));
 router.get('/', didController.listDIDs.bind(didController));
 router.get('/:did', validateDID, didController.getDID.bind(didController));
 router.get('/:did/document', validateDID, didController.getDIDDocument.bind(didController));

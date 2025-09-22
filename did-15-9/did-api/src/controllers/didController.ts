@@ -66,6 +66,75 @@ export class DIDController {
   }
 
   /**
+   * Crea un nuevo DID de forma simplificada (para la web app)
+   */
+  async createSimpleDID(req: Request, res: Response): Promise<void> {
+    try {
+      const { keyType = 'ed25519', purpose = 'authentication', didName } = req.body;
+
+      // Usar el DID proporcionado o generar uno único
+      let did: string;
+      if (didName && didName.trim()) {
+        // Validar que el didName comience con 'did:'
+        if (!didName.startsWith('did:')) {
+          res.status(400).json({ error: 'DID name must start with "did:"' });
+          return;
+        }
+        did = didName.trim();
+      } else {
+        // Generar un DID único si no se proporciona
+        const timestamp = Date.now();
+        const randomId = Math.random().toString(36).substring(2, 8);
+        did = `did:innovation:${timestamp}-${randomId}`;
+      }
+
+      // Verificar si el DID ya existe (muy improbable)
+      const existingDID = await this.didModel.getDID(did);
+      if (existingDID) {
+        res.status(409).json({ error: 'DID already exists, please try again' });
+        return;
+      }
+
+      // Generar mnemonic único para este DID
+      const mnemonic = this.cryptoManager.generateMnemonic();
+
+      // Generar todas las claves necesarias
+      const allKeys = this.cryptoManager.generateAllKeys(mnemonic);
+
+      // Generar documento DID con todas las claves
+      const didDocument = await this.generateDIDDocument(did, allKeys, mnemonic);
+
+      const createRequest: CreateDIDRequest = {
+        did,
+        document: didDocument,
+        keys: allKeys
+      };
+
+      const newDID = await this.didModel.createDID(createRequest);
+
+      // Obtener el documento y las claves creadas
+      const document = await this.didModel.getDIDDocument(did);
+      const keys = await this.didModel.getDIDKeys(did);
+
+      res.status(201).json({
+        id: newDID.id,
+        did: newDID.did,
+        did_document: document,
+        private_key: keys.find(k => k.key_usage === 'authentication')?.encrypted_private_key || '',
+        public_key: keys.find(k => k.key_usage === 'authentication')?.public_key || '',
+        created_at: newDID.created_at,
+        updated_at: newDID.updated_at
+      });
+    } catch (error) {
+      console.error('Error creating simple DID:', error);
+      res.status(500).json({
+        success: false,
+        error: error instanceof Error ? error.message : 'Internal server error'
+      });
+    }
+  }
+
+  /**
    * Obtiene un DID por su identificador
    */
   async getDID(req: Request, res: Response): Promise<void> {
@@ -196,11 +265,36 @@ export class DIDController {
     try {
       const dids = await this.didModel.listDIDs();
 
-      res.json({
-        success: true,
-        data: dids,
-        count: dids.length
-      });
+      // Obtener detalles completos de cada DID
+      const didsWithDetails = await Promise.all(dids.map(async (did) => {
+        try {
+          const document = await this.didModel.getDIDDocument(did.did);
+          const keys = await this.didModel.getDIDKeys(did.did);
+
+          return {
+            id: did.id,
+            did: did.did,
+            did_document: document,
+            private_key: keys.find(k => k.key_usage === 'authentication')?.encrypted_private_key || '',
+            public_key: keys.find(k => k.key_usage === 'authentication')?.public_key || '',
+            created_at: did.created_at,
+            updated_at: did.updated_at
+          };
+        } catch (error) {
+          console.error(`Error getting details for DID ${did.did}:`, error);
+          return {
+            id: did.id,
+            did: did.did,
+            did_document: {},
+            private_key: '',
+            public_key: '',
+            created_at: did.created_at,
+            updated_at: did.updated_at
+          };
+        }
+      }));
+
+      res.json(didsWithDetails);
     } catch (error) {
       console.error('Error listing DIDs:', error);
       res.status(500).json({

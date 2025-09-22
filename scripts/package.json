@@ -1,0 +1,22 @@
+{
+  "name": "innovation-did-scripts",
+  "version": "1.0.0",
+  "description": "Scripts utilitarios para el proyecto DID",
+  "main": "clear-database.ts",
+  "scripts": {
+    "clear-db": "npx tsx clear-database.ts",
+    "clear-db:force": "echo 'y' | npx tsx clear-database.ts",
+    "setup-realtime": "npx tsx setup-realtime.ts",
+    "enable-realtime": "npx tsx enable-realtime-sql.ts",
+    "test-channels": "npx tsx test-conversation-channels.ts"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "tsx": "^4.0.0",
+    "typescript": "^5.0.0"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.38.0",
+    "dotenv": "^16.3.1"
+  }
+}

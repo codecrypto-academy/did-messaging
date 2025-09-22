@@ -1,0 +1,48 @@
+--- a/src/components/chat/ChatInterface.tsx
++++ b/src/components/chat/ChatInterface.tsx
+@@ -1,6 +1,6 @@
+ 'use client'
+ 
+-import { useState, useEffect } from 'react'
++import { useState, useEffect, useRef } from 'react'
+ import { useAuth } from '@/contexts/AuthContext'
+ import { createClient } from '@supabase/supabase-js'
+ import { Database } from '@/lib/database.types'
+@@ -18,6 +18,7 @@ export default function ChatInterface() {
+   const [showNewConversation, setShowNewConversation] = useState(false)
+   const [loading, setLoading] = useState(true)
+   const [databaseError, setDatabaseError] = useState(false)
++  const unsubscribeRef = useRef<(() => void) | null>(null)
+ 
+ 
+   useEffect(() => {
+@@ -61,10 +62,20 @@ export default function ChatInterface() {
+   }
+ 
+   useEffect(() => {
+-    if (selectedConversation) {
+-      loadMessages(selectedConversation.id)
+-      subscribeToMessages(selectedConversation.id)
+-    }
+-  }, [selectedConversation])
++    if (selectedConversation) {
++      loadMessages(selectedConversation.id)
++      
++      // Limpiar suscripción anterior si existe
++      if (unsubscribeRef.current) {
++        console.log('Cleaning up previous subscription')
++        unsubscribeRef.current()
++      }
++      
++      // Crear nueva suscripción y guardar función de limpieza
++      const unsubscribe = subscribeToMessages(selectedConversation.id)
++      unsubscribeRef.current = unsubscribe
++    }
++    
++    // Cleanup al desmontar
++    return () => {
++      if (unsubscribeRef.current) {
++        unsubscribeRef.current()
++      }
++    }
++  }, [selectedConversation])
