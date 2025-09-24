@@ -7,7 +7,7 @@ import { X, Users, User, Search } from 'lucide-react'
 interface NewConversationModalProps {
   profiles: Profile[]
   onClose: () => void
-  onCreateConversation: (participantIds: string[], isGroup: boolean, groupName?: string) => void
+  onCreateConversation: (participantIds: string[], isGroup: boolean, groupName?: string) => Promise<'created' | 'existing' | 'error'>
 }
 
 export default function NewConversationModal({ 
@@ -20,6 +20,8 @@ export default function NewConversationModal({
   const [isGroup, setIsGroup] = useState(false)
   const [groupName, setGroupName] = useState('')
   const [step, setStep] = useState<'type' | 'participants' | 'group-name'>('type')
+  const [message, setMessage] = useState<{ type: 'success' | 'info' | 'error', text: string } | null>(null)
+  const [isCreating, setIsCreating] = useState(false)
 
 
   const filteredProfiles = profiles.filter(profile =>
@@ -35,13 +37,49 @@ export default function NewConversationModal({
     )
   }
 
-  const handleCreateConversation = () => {
+  const handleCreateConversation = async () => {
     if (selectedParticipants.length === 0) return
 
-    if (isGroup) {
-      onCreateConversation(selectedParticipants, true, groupName || undefined)
-    } else {
-      onCreateConversation(selectedParticipants, false)
+    setIsCreating(true)
+    setMessage(null)
+
+    try {
+      const result = isGroup 
+        ? await onCreateConversation(selectedParticipants, true, groupName || undefined)
+        : await onCreateConversation(selectedParticipants, false)
+
+      if (result === 'existing') {
+        setMessage({
+          type: 'info',
+          text: 'Ya tienes una conversación con esta persona. Se ha abierto la conversación existente.'
+        })
+        // Cerrar el modal después de un breve delay para que el usuario vea el mensaje
+        setTimeout(() => {
+          onClose()
+        }, 2000)
+      } else if (result === 'created') {
+        setMessage({
+          type: 'success',
+          text: isGroup ? 'Grupo creado exitosamente' : 'Conversación creada exitosamente'
+        })
+        // Cerrar el modal después de un breve delay
+        setTimeout(() => {
+          onClose()
+        }, 1500)
+      } else {
+        setMessage({
+          type: 'error',
+          text: 'Error al crear la conversación. Por favor, inténtalo de nuevo.'
+        })
+      }
+    } catch (error) {
+      console.error('Error creating conversation:', error)
+      setMessage({
+        type: 'error',
+        text: 'Error inesperado al crear la conversación.'
+      })
+    } finally {
+      setIsCreating(false)
     }
   }
 
@@ -72,6 +110,7 @@ export default function NewConversationModal({
   }
 
   const canProceed = () => {
+    if (isCreating) return false
     if (step === 'type') return true
     if (step === 'participants') return selectedParticipants.length > 0
     if (step === 'group-name') return groupName.trim().length > 0
@@ -123,6 +162,17 @@ export default function NewConversationModal({
 
         {/* Content */}
         <div className="p-6">
+          {/* Message Display */}
+          {message && (
+            <div className={`mb-4 p-3 rounded-lg ${
+              message.type === 'success' ? 'bg-green-50 text-green-800 border border-green-200' :
+              message.type === 'info' ? 'bg-blue-50 text-blue-800 border border-blue-200' :
+              'bg-red-50 text-red-800 border border-red-200'
+            }`}>
+              <p className="text-sm font-medium">{message.text}</p>
+            </div>
+          )}
+
           {step === 'type' && (
             <div className="space-y-4">
               <h3 className="text-sm font-medium text-gray-900 mb-4">
@@ -295,9 +345,19 @@ export default function NewConversationModal({
           <button
             onClick={handleNext}
             disabled={!canProceed()}
-            className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center space-x-2"
           >
-            {step === 'group-name' ? 'Crear Grupo' : 'Siguiente'}
+            {isCreating && (
+              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+            )}
+            <span>
+              {isCreating 
+                ? 'Creando...' 
+                : step === 'group-name' 
+                  ? 'Crear Grupo' 
+                  : 'Siguiente'
+              }
+            </span>
           </button>
         </div>
       </div>

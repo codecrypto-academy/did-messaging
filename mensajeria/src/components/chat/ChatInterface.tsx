@@ -3,15 +3,15 @@
 import { useState, useEffect, useRef } from 'react'
 import { useAuth } from '@/contexts/AuthContext'
 import { createClient } from '@supabase/supabase-js'
-import { Database } from '@/lib/database.types'
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey)
+const supabase = createClient(supabaseUrl, supabaseAnonKey)
 import ConversationList from './ConversationList'
 import MessageArea from './MessageArea'
 import UserProfile from './UserProfile'
 import NewConversationModal from './NewConversationModal'
+import ProfileDialog from './ProfileDialog'
 import DatabaseError from './DatabaseError'
 import { Message, Conversation, Profile } from '@/types/chat'
 
@@ -22,6 +22,7 @@ export default function ChatInterface() {
   const [messages, setMessages] = useState<Message[]>([])
   const [profiles, setProfiles] = useState<Profile[]>([])
   const [showNewConversation, setShowNewConversation] = useState(false)
+  const [showProfileDialog, setShowProfileDialog] = useState(false)
   const [loading, setLoading] = useState(true)
   const [databaseError, setDatabaseError] = useState(false)
   const unsubscribeRef = useRef<(() => void) | null>(null)
@@ -44,22 +45,23 @@ export default function ChatInterface() {
       .eq('id', user.id)
       .single()
 
-    if (profileError && profileError.code === 'PGRST116') {
-      console.log('User profile not found, creating one...')
-      const { error: createProfileError } = await supabase
-        .from('profiles')
-        .insert({
-          id: user.id,
-          username: user.user_metadata?.username || user.email?.split('@')[0] || 'user',
-          full_name: user.user_metadata?.full_name || user.user_metadata?.username || user.email?.split('@')[0] || 'User'
-        })
+      if (profileError && profileError.code === 'PGRST116') {
+        console.log('User profile not found, creating one...')
+        const { error: createProfileError } = await supabase
+          .from('profiles')
+          .insert({
+            id: user.id,
+            username: user.user_metadata?.username || user.email?.split('@')[0] || 'user',
+            full_name: user.user_metadata?.full_name || user.user_metadata?.username || user.email?.split('@')[0] || 'User'
+          })
 
-      if (createProfileError) {
-        console.error('Error creating user profile:', createProfileError)
-      } else {
-        console.log('User profile created successfully')
+        if (createProfileError) {
+          console.error('Error creating user profile:', createProfileError)
+          return 'error'
+        } else {
+          console.log('User profile created successfully')
+        }
       }
-    }
   }
 
   useEffect(() => {
@@ -226,10 +228,63 @@ export default function ChatInterface() {
     }
   }
 
-  const createConversation = async (participantIds: string[], isGroup: boolean = false, groupName?: string) => {
+  const checkExistingPrivateConversation = async (participantId: string): Promise<Conversation | null> => {
+    if (!user) return null
+
+    try {
+      // Buscar conversaciones privadas existentes entre el usuario actual y el participante
+      const { data: existingConversations, error } = await supabase
+        .from('conversations')
+        .select(`
+          *,
+          conversation_participants!inner(user_id)
+        `)
+        .eq('is_group', false)
+        .eq('conversation_participants.user_id', user.id)
+
+      if (error) {
+        console.error('Error checking existing conversations:', error)
+        return null
+      }
+
+      // Verificar si alguna de estas conversaciones también incluye al participante
+      for (const conv of existingConversations || []) {
+        const { data: participants } = await supabase
+          .from('conversation_participants')
+          .select('user_id')
+          .eq('conversation_id', conv.id)
+
+        const participantIds = participants?.map(p => p.user_id) || []
+        
+        // Si la conversación tiene exactamente 2 participantes y uno es el participante buscado
+        if (participantIds.length === 2 && participantIds.includes(participantId)) {
+          // Obtener los participantes completos para la respuesta
+          const { data: fullParticipants } = await supabase
+            .from('conversation_participants')
+            .select(`
+              user_id,
+              profiles(*)
+            `)
+            .eq('conversation_id', conv.id)
+
+          return {
+            ...conv,
+            conversation_participants: fullParticipants || []
+          }
+        }
+      }
+
+      return null
+    } catch (err) {
+      console.error('Unexpected error checking existing conversations:', err)
+      return null
+    }
+  }
+
+  const createConversation = async (participantIds: string[], isGroup: boolean = false, groupName?: string): Promise<'created' | 'existing' | 'error'> => {
     if (!user) {
       console.error('No user found when creating conversation')
-      return
+      return 'error'
     }
 
     console.log('Creating conversation with:', {
@@ -238,6 +293,18 @@ export default function ChatInterface() {
       isGroup,
       groupName
     })
+
+    // Para conversaciones privadas, verificar si ya existe una conversación con esa persona
+    if (!isGroup && participantIds.length === 1) {
+      const existingConversation = await checkExistingPrivateConversation(participantIds[0])
+      if (existingConversation) {
+        console.log('Conversation already exists with this user:', existingConversation)
+        // Seleccionar la conversación existente en lugar de crear una nueva
+        setSelectedConversation(existingConversation)
+        setShowNewConversation(false)
+        return 'existing'
+      }
+    }
 
     // Ensure user profile exists
     const { data: profile, error: profileError } = await supabase
@@ -258,11 +325,11 @@ export default function ChatInterface() {
 
       if (createProfileError) {
         console.error('Error creating profile:', createProfileError)
-        return
+        return 'error'
       }
     } else if (profileError) {
       console.error('Error checking profile:', profileError)
-      return
+      return 'error'
     }
 
     const { data: conversation, error: convError } = await supabase
@@ -283,7 +350,7 @@ export default function ChatInterface() {
         details: convError.details,
         hint: convError.hint
       })
-      return
+      return 'error'
     }
 
     // Ensure participant profiles exist
@@ -312,11 +379,12 @@ export default function ChatInterface() {
 
     if (participantsError) {
       console.error('Error adding participants:', participantsError)
-      return
+      return 'error'
     }
 
     setShowNewConversation(false)
     loadConversations()
+    return 'created'
   }
 
   const sendMessage = async (content: string) => {
@@ -383,13 +451,19 @@ export default function ChatInterface() {
     <div className="h-screen flex bg-gray-100">
       {/* Sidebar */}
       <div className="w-1/3 bg-white border-r border-gray-200 flex flex-col">
-        <UserProfile />
-        <div className="p-4 border-b border-gray-200">
+        <UserProfile onOpenProfileDialog={() => setShowProfileDialog(true)} />
+        <div className="p-4 border-b border-gray-200 space-y-2">
           <button
             onClick={() => setShowNewConversation(true)}
             className="w-full bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 transition-colors"
           >
             Nueva Conversación
+          </button>
+          <button
+            onClick={() => setShowProfileDialog(true)}
+            className="w-full bg-green-600 text-white py-2 px-4 rounded-lg hover:bg-green-700 transition-colors"
+          >
+            Configurar DID
           </button>
         </div>
         <ConversationList
@@ -429,6 +503,18 @@ export default function ChatInterface() {
           profiles={profiles}
           onClose={() => setShowNewConversation(false)}
           onCreateConversation={createConversation}
+        />
+      )}
+
+      {/* Profile Dialog */}
+      {showProfileDialog && (
+        <ProfileDialog
+          isOpen={showProfileDialog}
+          onClose={() => setShowProfileDialog(false)}
+          onSuccess={() => {
+            console.log('Profile updated successfully')
+            // Optionally reload profile data
+          }}
         />
       )}
     </div>

@@ -15,6 +15,9 @@ export interface Database {
           username: string
           full_name: string | null
           avatar_url: string | null
+          mnemonic: string | null
+          did: string | null
+          diddocument: Json | null
           created_at: string
           updated_at: string
         }
@@ -23,6 +26,9 @@ export interface Database {
           username: string
           full_name?: string | null
           avatar_url?: string | null
+          mnemonic?: string | null
+          did?: string | null
+          diddocument?: Json | null
           created_at?: string
           updated_at?: string
         }
@@ -31,6 +37,9 @@ export interface Database {
           username?: string
           full_name?: string | null
           avatar_url?: string | null
+          mnemonic?: string | null
+          did?: string | null
+          diddocument?: Json | null
           created_at?: string
           updated_at?: string
         }
@@ -106,6 +115,41 @@ export interface Database {
           sender_id?: string | null
           content?: string
           message_type?: string
+          created_at?: string
+          updated_at?: string
+        }
+      }
+      profile_keys: {
+        Row: {
+          id: string
+          profile_id: string | null
+          derived_path: string
+          curve_type: string
+          key_usage: string
+          public_key: string
+          private_key: string
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          profile_id?: string | null
+          derived_path: string
+          curve_type: string
+          key_usage: string
+          public_key: string
+          private_key: string
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          profile_id?: string | null
+          derived_path?: string
+          curve_type?: string
+          key_usage?: string
+          public_key?: string
+          private_key?: string
           created_at?: string
           updated_at?: string
         }

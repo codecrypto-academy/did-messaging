@@ -8,8 +8,10 @@ interface AuthContextType {
   user: User | null
   session: Session | null
   loading: boolean
-  signUp: (email: string, password: string, username: string) => Promise<any>
-  signIn: (email: string, password: string) => Promise<any>
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  signUp: (email: string, password: string, username: string) => Promise<{ data: any; error: any }>
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  signIn: (email: string, password: string) => Promise<{ data: any; error: any }>
   signOut: () => Promise<void>
 }
 

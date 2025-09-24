@@ -5,7 +5,11 @@ import { LogOut, Settings, User } from 'lucide-react'
 import { useState } from 'react'
 import ProfileModal from './ProfileModal'
 
-export default function UserProfile() {
+interface UserProfileProps {
+  onOpenProfileDialog: () => void
+}
+
+export default function UserProfile({ onOpenProfileDialog }: UserProfileProps) {
   const { user, signOut } = useAuth()
   const [showDropdown, setShowDropdown] = useState(false)
   const [showProfileModal, setShowProfileModal] = useState(false)
@@ -66,11 +70,14 @@ export default function UserProfile() {
                   <span>Editar Perfil</span>
                 </button>
                 <button
-                  onClick={() => setShowDropdown(false)}
+                  onClick={() => {
+                    onOpenProfileDialog()
+                    setShowDropdown(false)
+                  }}
                   className="flex items-center space-x-2 w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
                 >
                   <Settings className="w-4 h-4" />
-                  <span>Configuración</span>
+                  <span>Configurar DID</span>
                 </button>
                 <hr className="my-1" />
                 <button

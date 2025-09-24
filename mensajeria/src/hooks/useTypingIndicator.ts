@@ -68,7 +68,8 @@ export function useTypingIndicator(conversationId: string | null) {
       .eq('id', user.id)
       .single()
     
-    const username = profile?.full_name || profile?.username || user.email?.split('@')[0] || 'Usuario'
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const username = (profile as any)?.full_name || (profile as any)?.username || user.email?.split('@')[0] || 'Usuario'
 
     await supabase
       .channel(`typing:${conversationId}`)
@@ -106,7 +107,8 @@ export function useTypingIndicator(conversationId: string | null) {
       .eq('id', user.id)
       .single()
     
-    const username = profile?.full_name || profile?.username || user.email?.split('@')[0] || 'Usuario'
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const username = (profile as any)?.full_name || (profile as any)?.username || user.email?.split('@')[0] || 'Usuario'
 
     await supabase
       .channel(`typing:${conversationId}`)

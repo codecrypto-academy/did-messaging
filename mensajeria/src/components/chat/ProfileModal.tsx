@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useAuth } from '@/contexts/AuthContext'
 import { supabase } from '@/lib/supabase'
 import { X, Camera, User, Mail } from 'lucide-react'
@@ -17,16 +17,9 @@ export default function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
     full_name: '',
     avatar_url: ''
   })
-  const [loading, setLoading] = useState(false)
   const [saving, setSaving] = useState(false)
 
-  useEffect(() => {
-    if (isOpen && user) {
-      loadProfile()
-    }
-  }, [isOpen, user])
-
-  const loadProfile = async () => {
+  const loadProfile = useCallback(async () => {
     if (!user) return
 
     const { data, error } = await supabase
@@ -41,11 +34,22 @@ export default function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
     }
 
     setProfile({
-      username: data?.username || user.email?.split('@')[0] || '',
-      full_name: data?.full_name || user.user_metadata?.full_name || '',
-      avatar_url: data?.avatar_url || user.user_metadata?.avatar_url || ''
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      username: (data as any)?.username || user.email?.split('@')[0] || '',
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      full_name: (data as any)?.full_name || user.user_metadata?.full_name || '',
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      avatar_url: (data as any)?.avatar_url || user.user_metadata?.avatar_url || ''
     })
-  }
+  }, [user])
+
+  useEffect(() => {
+    if (isOpen && user) {
+      console.log('ProfileModal opened, loading data...')
+      loadProfile()
+    }
+  }, [isOpen, user, loadProfile])
+
 
   const handleSave = async () => {
     if (!user) return
@@ -58,7 +62,8 @@ export default function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
         username: profile.username,
         full_name: profile.full_name,
         avatar_url: profile.avatar_url
-      })
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      } as any)
 
     if (error) {
       console.error('Error saving profile:', error)
@@ -90,7 +95,7 @@ export default function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg shadow-xl w-full max-w-md mx-4">
+      <div className="bg-white rounded-lg shadow-xl w-full max-w-4xl mx-4">
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-gray-200">
           <h2 className="text-lg font-semibold text-gray-900">
@@ -177,6 +182,7 @@ export default function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
                 El email no se puede cambiar
               </p>
             </div>
+
           </div>
         </div>
 
@@ -197,6 +203,7 @@ export default function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
           </button>
         </div>
       </div>
+      
     </div>
   )
 }
