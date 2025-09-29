@@ -90,35 +90,47 @@ export interface Database {
           joined_at?: string
         }
       }
-      messages: {
-        Row: {
-          id: string
-          conversation_id: string | null
-          sender_id: string | null
-          content: string
-          message_type: string
-          created_at: string
-          updated_at: string
-        }
-        Insert: {
-          id?: string
-          conversation_id?: string | null
-          sender_id?: string | null
-          content: string
-          message_type?: string
-          created_at?: string
-          updated_at?: string
-        }
-        Update: {
-          id?: string
-          conversation_id?: string | null
-          sender_id?: string | null
-          content?: string
-          message_type?: string
-          created_at?: string
-          updated_at?: string
-        }
+    messages: {
+      Row: {
+        id: string
+        conversation_id: string | null
+        sender_id: string | null
+        content: string | null
+        encrypted_content: string | null
+        sender_public_key: string | null
+        recipient_public_key: string | null
+        encryption_algorithm: string | null
+        message_type: string
+        created_at: string
+        updated_at: string
       }
+      Insert: {
+        id?: string
+        conversation_id?: string | null
+        sender_id?: string | null
+        content?: string | null
+        encrypted_content?: string | null
+        sender_public_key?: string | null
+        recipient_public_key?: string | null
+        encryption_algorithm?: string | null
+        message_type?: string
+        created_at?: string
+        updated_at?: string
+      }
+      Update: {
+        id?: string
+        conversation_id?: string | null
+        sender_id?: string | null
+        content?: string | null
+        encrypted_content?: string | null
+        sender_public_key?: string | null
+        recipient_public_key?: string | null
+        encryption_algorithm?: string | null
+        message_type?: string
+        created_at?: string
+        updated_at?: string
+      }
+    }
       profile_keys: {
         Row: {
           id: string

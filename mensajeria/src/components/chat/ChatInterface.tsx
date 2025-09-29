@@ -13,7 +13,9 @@ import UserProfile from './UserProfile'
 import NewConversationModal from './NewConversationModal'
 import ProfileDialog from './ProfileDialog'
 import DatabaseError from './DatabaseError'
+import DebugAuth from '../DebugAuth'
 import { Message, Conversation, Profile } from '@/types/chat'
+import { useMessageEncryption } from '@/hooks/useMessageEncryption'
 
 export default function ChatInterface() {
   const { user } = useAuth()
@@ -26,6 +28,15 @@ export default function ChatInterface() {
   const [loading, setLoading] = useState(true)
   const [databaseError, setDatabaseError] = useState(false)
   const unsubscribeRef = useRef<(() => void) | null>(null)
+  
+  // Message encryption hook
+  const { 
+    sendEncryptedMessage, 
+    decryptMessageContent, 
+    hasKeyAgreementKeys, 
+    isEncrypting, 
+    isDecrypting 
+  } = useMessageEncryption()
 
 
   useEffect(() => {
@@ -171,6 +182,13 @@ export default function ChatInterface() {
   }
 
   const loadMessages = async (conversationId: string) => {
+    console.log('🔄 Loading messages for conversation:', conversationId)
+    console.log('👤 Current user:', {
+      id: user?.id,
+      email: user?.email,
+      isAuthenticated: !!user
+    })
+    
     try {
       const { data, error } = await supabase
         .from('messages')
@@ -190,7 +208,73 @@ export default function ChatInterface() {
         return
       }
 
-      setMessages(data || [])
+      console.log('📨 Messages loaded from database:', data?.length || 0)
+
+      // Decrypt messages if user has keyAgreement keys
+      if (user && data) {
+        console.log('Loading messages for user:', {
+          userId: user.id,
+          userEmail: user.email,
+          hasUserId: !!user.id,
+          userCreatedAt: user.created_at
+        })
+        
+        // Verify user is properly authenticated
+        if (!user.id) {
+          console.error('User ID is missing - user not properly authenticated')
+          setMessages(data || [])
+          return
+        }
+        
+        const hasKeys = await hasKeyAgreementKeys(user.id)
+        console.log('🔑 User has keys for message loading:', hasKeys)
+        
+        if (!hasKeys) {
+          console.warn('⚠️ User does not have keyAgreement keys - messages will not be decrypted')
+          console.log('User details:', {
+            id: user.id,
+            email: user.email,
+            created_at: user.created_at
+          })
+        }
+        
+        if (hasKeys) {
+          console.log('User has keys, attempting to decrypt messages...')
+          const decryptedMessages = await Promise.all(
+            data.map(async (message) => {
+              try {
+                console.log('Decrypting message:', {
+                  messageId: message.id,
+                  senderId: message.sender_id,
+                  currentUserId: user.id,
+                  hasEncryptedContent: !!message.encrypted_content,
+                  originalContent: message.content
+                })
+                const decryptedContent = await decryptMessageContent(message, user.id)
+                console.log('Decryption result:', {
+                  messageId: message.id,
+                  originalContent: message.content,
+                  decryptedContent: decryptedContent
+                })
+                return {
+                  ...message,
+                  content: decryptedContent
+                }
+              } catch (error) {
+                console.error('Error decrypting message:', error)
+                return message
+              }
+            })
+          )
+          console.log('All messages decrypted:', decryptedMessages)
+          setMessages(decryptedMessages)
+        } else {
+          console.log('User has no keys, showing original messages')
+          setMessages(data)
+        }
+      } else {
+        setMessages(data || [])
+      }
     } catch (err) {
       console.error('Unexpected error loading messages:', err)
     }
@@ -209,9 +293,32 @@ export default function ChatInterface() {
           table: 'messages',
           filter: `conversation_id=eq.${conversationId}`,
         },
-        (payload) => {
+        async (payload) => {
           console.log('New message received via subscription:', payload)
           const newMessage = payload.new as Message
+          
+          // Decrypt message if user has keyAgreement keys
+          if (user) {
+            console.log('Decrypting new message for user:', {
+              userId: user.id,
+              userEmail: user.email,
+              messageId: newMessage.id,
+              senderId: newMessage.sender_id
+            })
+            
+            const hasKeys = await hasKeyAgreementKeys(user.id)
+            console.log('User has keys for new message:', hasKeys)
+            
+            if (hasKeys) {
+              try {
+                const decryptedContent = await decryptMessageContent(newMessage, user.id)
+                newMessage.content = decryptedContent
+              } catch (error) {
+                console.error('Error decrypting new message:', error)
+              }
+            }
+          }
+          
           setMessages(prev => {
             console.log('Adding new message to state:', newMessage)
             return [...prev, newMessage]
@@ -399,29 +506,75 @@ export default function ChatInterface() {
     console.log('Sending message:', {
       content,
       conversation_id: selectedConversation.id,
-      sender_id: user.id
+      sender_id: user.id,
+      userEmail: user.email,
+      userCreatedAt: user.created_at
     })
 
-    const { data, error } = await supabase
-      .from('messages')
-      .insert({
-        conversation_id: selectedConversation.id,
-        sender_id: user.id,
-        content,
-        message_type: 'text'
+    try {
+      // Verify user is properly authenticated
+      if (!user.id) {
+        console.error('User ID is missing - user not properly authenticated')
+        return
+      }
+      
+      // Check if user has keyAgreement keys
+      console.log('Checking keys for user:', {
+        userId: user.id,
+        userEmail: user.email,
+        userCreatedAt: user.created_at
       })
-      .select()
+      
+      const hasKeys = await hasKeyAgreementKeys(user.id)
 
-    if (error) {
-      console.error('Error sending message:', error)
-      console.error('Error details:', {
-        code: error.code,
-        message: error.message,
-        details: error.details,
-        hint: error.hint
+      console.log('hasKeys result:', {
+        hasKeys,
+        userId: user.id
       })
-    } else {
-      console.log('Message sent successfully:', data)
+      
+      if (hasKeys && selectedConversation.conversation_participants) {
+        // Find the recipient (first participant that's not the current user)
+        const recipient = selectedConversation.conversation_participants.find(
+          p => p.user_id !== user.id
+        )
+        
+        if (recipient) {
+          // Send encrypted message
+          await sendEncryptedMessage(
+            selectedConversation.id,
+            user.id,
+            recipient.user_id,
+            content
+          )
+          console.log('Encrypted message sent successfully')
+          return
+        }
+      }
+      
+      // Fallback to unencrypted message
+      const { data, error } = await supabase
+        .from('messages')
+        .insert({
+          conversation_id: selectedConversation.id,
+          sender_id: user.id,
+          content,
+          message_type: 'text'
+        })
+        .select()
+
+      if (error) {
+        console.error('Error sending message:', error)
+        console.error('Error details:', {
+          code: error.code,
+          message: error.message,
+          details: error.details,
+          hint: error.hint
+        })
+      } else {
+        console.log('Message sent successfully:', data)
+      }
+    } catch (error) {
+      console.error('Error sending message:', error)
     }
   }
 
@@ -449,6 +602,9 @@ export default function ChatInterface() {
 
   return (
     <div className="h-screen flex bg-gray-100">
+      {/* Debug Auth Component */}
+      <DebugAuth />
+      
       {/* Sidebar */}
       <div className="w-1/3 bg-white border-r border-gray-200 flex flex-col">
         <UserProfile onOpenProfileDialog={() => setShowProfileDialog(true)} />

@@ -34,6 +34,7 @@ export default function MessageArea({
 
   const handleSendMessage = (e: React.FormEvent) => {
     e.preventDefault()
+    console.log('handleSendMessage:', newMessage.trim())
     if (newMessage.trim()) {
       onSendMessage(newMessage.trim())
       setNewMessage('')
@@ -122,7 +123,12 @@ export default function MessageArea({
                       {senderName}
                     </p>
                   )}
-                  <p className="text-sm">{message.content}</p>
+                  <p className="text-sm">
+                    {message.content || '[Mensaje cifrado]'}
+                    {message.encrypted_content && (
+                      <span className="ml-2 text-xs text-gray-400">🔒</span>
+                    )}
+                  </p>
                   <p className={`text-xs mt-1 ${
                     isOwn ? 'text-blue-100' : 'text-gray-500'
                   }`}>

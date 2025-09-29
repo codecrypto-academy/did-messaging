@@ -33,7 +33,17 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   useEffect(() => {
     // Get initial session
     const getSession = async () => {
-      const { data: { session } } = await supabase.auth.getSession()
+      console.log('🔍 Getting initial session...')
+      const { data: { session }, error } = await supabase.auth.getSession()
+      if (error) {
+        console.error('❌ Error getting session:', error)
+      } else {
+        console.log('✅ Initial session retrieved:', { 
+          hasSession: !!session, 
+          hasUser: !!session?.user,
+          userId: session?.user?.id?.substring(0, 8) + '...' || 'None'
+        })
+      }
       setSession(session)
       setUser(session?.user ?? null)
       setLoading(false)
@@ -45,6 +55,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange(async (event, session) => {
+      console.log('🔐 Auth state change:', { event, session: !!session, user: !!session?.user })
       setSession(session)
       setUser(session?.user ?? null)
       setLoading(false)

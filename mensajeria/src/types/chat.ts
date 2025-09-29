@@ -25,7 +25,11 @@ export interface Message {
   id: string
   conversation_id: string | null
   sender_id: string | null
-  content: string
+  content: string | null
+  encrypted_content: string | null
+  sender_public_key: string | null
+  recipient_public_key: string | null
+  encryption_algorithm: string | null
   message_type: string
   created_at: string
   updated_at: string
