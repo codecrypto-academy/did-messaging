@@ -1,11 +1,19 @@
 import { useState, useCallback } from 'react'
 import { supabase } from '@/lib/supabase'
-import { encryptMessageForStorage, decryptMessage, hexToUint8Array, uint8ArrayToHex, EncryptedMessage, EncryptedMessageData } from '@/lib/encryption'
+import { encryptMessageForStorage, decryptMessage, hexToUint8Array, uint8ArrayToHex, EncryptedMessageData } from '@/lib/encryption'
 import { Message } from '@/types/chat'
 
 interface ProfileKey {
   private_key: string
   public_key: string
+}
+
+interface EncryptedMessageForDecryption {
+  encryptedContent: string
+  senderPublicKey: string
+  algorithm: string
+  iv: string
+  tag: string
 }
 
 export function useMessageEncryption() {
@@ -226,7 +234,7 @@ export function useMessageEncryption() {
       }
 
       // Create encrypted message object with the correct public key for decryption
-      const encryptedMessage: EncryptedMessage = {
+      const encryptedMessage: EncryptedMessageForDecryption = {
         encryptedContent: encryptedData.encryptedContent,
         senderPublicKey: uint8ArrayToHex(otherUserPublicKey), // Use the other user's public key for decryption
         algorithm: message.encryption_algorithm || 'x25519-aes-gcm',

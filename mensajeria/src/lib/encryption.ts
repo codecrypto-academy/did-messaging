@@ -6,7 +6,13 @@ const ALGORITHM = 'AES-GCM'
 const KEY_LENGTH = 256
 const IV_LENGTH = 12 // 96 bits for GCM
 
-export interface EncryptedMessage {
+export interface EncryptedMessageData {
+  encryptedContent: string
+  iv: string
+  tag: string
+}
+
+interface EncryptedMessageForDecryption {
   encryptedContent: string
   senderPublicKey: string
   algorithm: string
@@ -14,24 +20,9 @@ export interface EncryptedMessage {
   tag: string
 }
 
-export interface EncryptedMessageData {
-  encryptedContent: string
-  iv: string
-  tag: string
-}
-
 export interface KeyPair {
   privateKey: Uint8Array
   publicKey: Uint8Array
-}
-
-/**
- * Generate a new x25519 key pair for key agreement
- */
-export function generateKeyPair(): KeyPair {
-  const privateKey = randomBytes(32)
-  const publicKey = x25519.getPublicKey(privateKey)
-  return { privateKey, publicKey }
 }
 
 /**
@@ -133,40 +124,6 @@ async function decryptWithAES(encrypted: Uint8Array, iv: Uint8Array, tag: Uint8A
 }
 
 /**
- * Encrypt a message using Diffie-Hellman key agreement
- */
-export async function encryptMessage(
-  message: string,
-  senderPrivateKey: Uint8Array,
-  recipientPublicKey: Uint8Array
-): Promise<EncryptedMessage> {
-  try {
-    // Perform key agreement
-    const sharedSecret = performKeyAgreement(senderPrivateKey, recipientPublicKey)
-    
-    // Derive encryption key
-    const encryptionKey = await deriveEncryptionKey(sharedSecret)
-    
-    // Encrypt the message
-    const { encrypted, iv, tag } = await encryptWithAES(message, encryptionKey)
-    
-    // Get sender's public key
-    const senderPublicKey = x25519.getPublicKey(senderPrivateKey)
-    
-    return {
-      encryptedContent: uint8ArrayToBase64(encrypted),
-      senderPublicKey: uint8ArrayToHex(senderPublicKey),
-      algorithm: 'x25519-aes-gcm',
-      iv: uint8ArrayToBase64(iv),
-      tag: uint8ArrayToBase64(tag)
-    }
-  } catch (error) {
-    console.error('Error encrypting message:', error)
-    throw new Error('Failed to encrypt message')
-  }
-}
-
-/**
  * Encrypt a message and return data suitable for database storage
  */
 export async function encryptMessageForStorage(
@@ -208,7 +165,7 @@ export async function encryptMessageForStorage(
  * Decrypt a message using Diffie-Hellman key agreement
  */
 export async function decryptMessage(
-  encryptedMessage: EncryptedMessage,
+  encryptedMessage: EncryptedMessageForDecryption,
   recipientPrivateKey: Uint8Array
 ): Promise<string> {
   try {
